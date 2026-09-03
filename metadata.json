@@ -1,0 +1,6 @@
+{
+  "name": "Socxima Quantum Core",
+  "description": "High-performance quantum state simulator, SOXCIMA AI results terminal, scientific project notebook (Base de Notas), twin node consensus network, verifiable knowledge blockchain, and Ed25519 cryptographic identity.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
