@@ -42,6 +42,13 @@ export interface SoxcimaChatMessage {
   timestamp: number;
   telemetrySnapshot?: ScientificQuantumTelemetry;
   attachedNoteTitle?: string;
+  simulationPayload?: {
+    systemKind: string;
+    systemName: string;
+    noteId: string;
+    noteTitle: string;
+    sha256Signature: string;
+  };
 }
 
 export interface KnowledgeMemoryRecord {

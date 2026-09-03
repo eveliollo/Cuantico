@@ -1,4 +1,10 @@
 import { ScientificProjectNote, ScientificQuantumTelemetry, KnowledgeMemoryRecord } from '../types/scientificNotes';
+import {
+  interpretarSistemaFisico,
+  simularPasoFisico,
+  autoAnotarEnBaseDeNotas,
+  InterpetacionFisica,
+} from './physicsSimulationEngine';
 
 export const SOXCIMA_NOMBRE = 'SOXCIMA';
 export const SOXCIMA_FIRMA = '✨ SOXCIMA ✨';
