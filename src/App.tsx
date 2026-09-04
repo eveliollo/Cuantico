@@ -8,6 +8,7 @@ import { LedgerExplorer } from './components/LedgerExplorer';
 import { RustCrateViewer } from './components/RustCrateViewer';
 import { SocximaEnginePanel } from './components/SocximaEnginePanel';
 import { SoxcimaAiPanel } from './components/SoxcimaAiPanel';
+import { SatelliteTelemetryPanel } from './components/SatelliteTelemetryPanel';
 import { TwinNetworkPanel } from './components/TwinNetworkPanel';
 import { KnowledgeBlockchainPanel } from './components/KnowledgeBlockchainPanel';
 import { GatePlacement, SimulationResult, Ed25519KeyPair } from './types/quantum';
@@ -232,6 +233,15 @@ export default function App() {
             engine={engineRef.current}
             onEngineUpdate={forceUpdate}
             onSyncTwinNetwork={handleSyncTwinsFromEngine}
+            onNavigateToSatellite={() => setActiveTab('satelite')}
+          />
+        )}
+
+        {/* Real-time Satellite Connection & Relativistic Comparison Tab */}
+        {activeTab === 'satelite' && (
+          <SatelliteTelemetryPanel
+            engine={engineRef.current}
+            onEngineUpdate={forceUpdate}
           />
         )}
 
@@ -257,6 +267,8 @@ export default function App() {
               onSignAndCommit={handleSignAndCommit}
               onSaveAssemblyToLedger={handleSaveAssemblyToLedger}
               isSimulating={isSimulating}
+              simulationResult={currentResult}
+              engine={engineRef.current}
             />
 
             <StateVectorView result={currentResult} />

@@ -1,8 +1,9 @@
 import React from 'react';
-import { Cpu, Key, Database, Sparkles, Code2, ShieldCheck, Zap, Activity, Network, Blocks, BookOpen } from 'lucide-react';
+import { Cpu, Key, Database, Sparkles, Code2, ShieldCheck, Zap, Activity, Network, Blocks, BookOpen, Satellite } from 'lucide-react';
 
 export type ActiveTab =
   | 'engine'
+  | 'satelite'
   | 'soxcima_ai'
   | 'simulator'
   | 'gemelos'
@@ -27,6 +28,7 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const tabs = [
     { id: 'engine' as ActiveTab, label: 'Socxima Engine', icon: Activity, badge: `Ciclo #${engineCycle}` },
+    { id: 'satelite' as ActiveTab, label: 'Tierra, Satélites & Webcams', icon: Satellite, badge: 'En Vivo' },
     { id: 'soxcima_ai' as ActiveTab, label: 'SOXCIMA IA & Notas', icon: Sparkles, badge: 'Proyectos & IA' },
     { id: 'simulator' as ActiveTab, label: 'Circuit Composer', icon: Cpu, badge: `${qubitCount} Qubits` },
     { id: 'gemelos' as ActiveTab, label: 'Twin Consensus', icon: Network, badge: 'SistemaGemelos' },

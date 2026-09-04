@@ -17,7 +17,9 @@ import {
   Lock,
   Layers,
   HelpCircle,
-  Video
+  Video,
+  Box,
+  Vibrate
 } from 'lucide-react';
 import {
   PhysicalSystemKind,
@@ -26,6 +28,7 @@ import {
   simularPasoFisico,
 } from '../core/physicsSimulationEngine';
 import { ScientificProjectNote } from '../types/scientificNotes';
+import { QuantumHyperdimensional3DViewer } from './QuantumHyperdimensional3DViewer';
 
 interface LivePhysicsVideoRendererProps {
   interpretacion: InterpetacionFisica;
@@ -39,6 +42,9 @@ export const LivePhysicsVideoRenderer: React.FC<LivePhysicsVideoRendererProps> =
   onOpenNote,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  // View Mode: Default to 3D / 4D Hyperdimensional Ultra-HD 4K with vibration
+  const [viewMode, setViewMode] = useState<'3d_4d' | '2d'>('3d_4d');
 
   // Video stream simulation controls
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
@@ -189,7 +195,7 @@ export const LivePhysicsVideoRenderer: React.FC<LivePhysicsVideoRendererProps> =
         }
 
         // Estela cuántica del electrón
-        if (showTrails && est.estela.length > 1) {
+        if (showTrails && Array.isArray(est?.estela) && est.estela.length > 1) {
           ctx.beginPath();
           for (let i = 0; i < est.estela.length; i++) {
             const p = est.estela[i];
@@ -397,7 +403,7 @@ export const LivePhysicsVideoRenderer: React.FC<LivePhysicsVideoRendererProps> =
         ctx.fillText('Au 79⁺', centerX - 13, centerY + 3);
 
         // Estela de la partícula alfa
-        if (showTrails && est.estela.length > 1) {
+        if (showTrails && Array.isArray(est?.estela) && est.estela.length > 1) {
           ctx.beginPath();
           for (let i = 0; i < est.estela.length; i++) {
             const p = est.estela[i];
@@ -429,10 +435,12 @@ export const LivePhysicsVideoRenderer: React.FC<LivePhysicsVideoRendererProps> =
         // Chispas de dispersión
         if (est.particulasExtras) {
           est.particulasExtras.forEach((spark) => {
-            ctx.fillStyle = spark.color;
-            ctx.beginPath();
-            ctx.arc(centerX + spark.x, centerY + spark.y, spark.radio, 0, Math.PI * 2);
-            ctx.fill();
+            if (spark.radio && spark.radio > 0) {
+              ctx.fillStyle = spark.color;
+              ctx.beginPath();
+              ctx.arc(centerX + spark.x, centerY + spark.y, Math.max(0.1, spark.radio), 0, Math.PI * 2);
+              ctx.fill();
+            }
           });
         }
         break;
@@ -527,24 +535,29 @@ export const LivePhysicsVideoRenderer: React.FC<LivePhysicsVideoRendererProps> =
         // Partículas en vuelo
         if (est.particulasExtras) {
           est.particulasExtras.forEach((pt) => {
-            ctx.fillStyle = pt.color;
-            ctx.beginPath();
-            ctx.arc(centerX + pt.x, centerY + pt.y, pt.radio, 0, Math.PI * 2);
-            ctx.fill();
+            if (pt.radio && pt.radio > 0) {
+              ctx.fillStyle = pt.color;
+              ctx.beginPath();
+              ctx.arc(centerX + pt.x, centerY + pt.y, Math.max(0.1, pt.radio), 0, Math.PI * 2);
+              ctx.fill();
+            }
           });
         }
 
         // Frente de ondas circulares saliendo de las rendijas
         ctx.strokeStyle = 'rgba(168, 85, 247, 0.2)';
         ctx.lineWidth = 1.5;
-        for (let r = 20; r <= 220; r += 30) {
-          const wavePhase = (r - (t * 80) % 30);
-          ctx.beginPath();
-          ctx.arc(slitX, centerY - d / 2, wavePhase, -Math.PI / 2, Math.PI / 2);
-          ctx.stroke();
-          ctx.beginPath();
-          ctx.arc(slitX, centerY + d / 2, wavePhase, -Math.PI / 2, Math.PI / 2);
-          ctx.stroke();
+        const waveOffset = ((t * 80) % 30 + 30) % 30;
+        for (let r = 0; r <= 220; r += 30) {
+          const waveRadius = r + waveOffset;
+          if (waveRadius > 0.5) {
+            ctx.beginPath();
+            ctx.arc(slitX, centerY - d / 2, waveRadius, -Math.PI / 2, Math.PI / 2);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(slitX, centerY + d / 2, waveRadius, -Math.PI / 2, Math.PI / 2);
+            ctx.stroke();
+          }
         }
 
         ctx.fillStyle = '#38bdf8';
@@ -557,7 +570,7 @@ export const LivePhysicsVideoRenderer: React.FC<LivePhysicsVideoRendererProps> =
 
       default: {
         // Trayectoria 3D genérica en espacio de fases
-        if (showTrails && est.estela.length > 1) {
+        if (showTrails && Array.isArray(est?.estela) && est.estela.length > 1) {
           ctx.beginPath();
           for (let i = 0; i < est.estela.length; i++) {
             const p = est.estela[i];
@@ -615,18 +628,18 @@ export const LivePhysicsVideoRenderer: React.FC<LivePhysicsVideoRendererProps> =
 
   return (
     <div className="space-y-4">
-      {/* Simulation Video Screen Container */}
+      {/* Simulation Screen Container */}
       <div className="relative rounded-2xl border border-slate-800 bg-slate-950 overflow-hidden shadow-2xl">
         {/* Top Video Header Bar */}
         <div className="bg-slate-900/90 backdrop-blur border-b border-slate-800 px-4 py-2.5 flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center space-x-2.5">
-            <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">
+            <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-rose-500/20 text-rose-400 border border-rose-500/30">
               <Video className="w-4 h-4" />
             </div>
             <div>
               <div className="flex items-center space-x-2">
                 <h3 className="text-sm font-bold text-slate-100">{interpretacion.nombre}</h3>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 font-mono">
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20 font-mono">
                   Matemática Exacta
                 </span>
               </div>
@@ -634,119 +647,166 @@ export const LivePhysicsVideoRenderer: React.FC<LivePhysicsVideoRendererProps> =
             </div>
           </div>
 
-          {/* Auto-Annotated Note Badge if available */}
-          {autoAnnotatedNote && (
-            <div className="flex items-center space-x-2">
-              <span className="flex items-center space-x-1.5 text-xs bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 px-2.5 py-1 rounded-lg">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                <span className="font-semibold">Auto-Anotado en Base de Notas</span>
-              </span>
-              {onOpenNote && (
-                <button
-                  onClick={() => onOpenNote(autoAnnotatedNote.id)}
-                  className="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-2 py-1 rounded-lg flex items-center space-x-1 transition-colors"
-                >
-                  <FileText className="w-3 h-3 text-cyan-400" />
-                  <span>Ver Nota</span>
-                </button>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* The 60 FPS Live Canvas */}
-        <div className="relative w-full flex items-center justify-center bg-slate-950">
-          <canvas
-            ref={canvasRef}
-            width={780}
-            height={380}
-            className="w-full max-h-[380px] object-contain cursor-crosshair"
-          />
-        </div>
-
-        {/* Video Player Control Toolbar */}
-        <div className="bg-slate-900/95 border-t border-slate-800 px-4 py-2.5 flex items-center justify-between flex-wrap gap-3">
-          {/* Playback Controls */}
+          {/* Right side: View Mode Toggle (3D/4D 4K vs 2D) & Auto-annotated badge */}
           <div className="flex items-center space-x-2">
-            <button
-              onClick={() => setIsPlaying(!isPlaying)}
-              className={`p-2 rounded-lg font-medium text-xs flex items-center space-x-1.5 transition-all ${
-                isPlaying
-                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30 hover:bg-amber-500/30'
-                  : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/30'
-              }`}
-              title={isPlaying ? 'Pausar Video' : 'Reproducir Video'}
-            >
-              {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-              <span>{isPlaying ? 'Pausar' : 'Reanudar'}</span>
-            </button>
+            {/* 3D / 4D vs 2D Switcher */}
+            <div className="flex items-center bg-slate-950 p-0.5 rounded-xl border border-slate-800 text-xs">
+              <button
+                onClick={() => setViewMode('3d_4d')}
+                className={`px-3 py-1.5 rounded-lg font-bold font-mono text-xs flex items-center space-x-1.5 transition-all cursor-pointer ${
+                  viewMode === '3d_4d'
+                    ? 'bg-gradient-to-r from-rose-500 to-pink-500 text-white shadow-md shadow-rose-500/30'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Box className="w-3.5 h-3.5 text-amber-300" />
+                <span>3D / 4D 4K</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-300 animate-pulse" />
+              </button>
 
-            <button
-              onClick={() => {
-                timeRef.current = 0;
-                stepRef.current = 0;
-                const reset = simularPasoFisico(interpretacion.tipo, 0, 0);
-                setEstado(reset);
-              }}
-              className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs flex items-center space-x-1 transition-colors"
-              title="Reiniciar Simulación al Tiempo T=0"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-              <span>Reiniciar</span>
-            </button>
+              <button
+                onClick={() => setViewMode('2d')}
+                className={`px-3 py-1.5 rounded-lg font-bold font-mono text-xs flex items-center space-x-1.5 transition-all cursor-pointer ${
+                  viewMode === '2d'
+                    ? 'bg-slate-800 text-cyan-300 border border-slate-700'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Layers className="w-3.5 h-3.5" />
+                <span>2D Plano</span>
+              </button>
+            </div>
 
-            {/* Speed control buttons */}
-            <div className="flex items-center bg-slate-950 rounded-lg p-0.5 border border-slate-800 text-xs">
-              {[0.25, 0.5, 1.0, 2.0, 4.0].map((s) => (
+            {/* Auto-Annotated Note Badge if available */}
+            {autoAnnotatedNote && (
+              <div className="flex items-center space-x-2">
+                <span className="flex items-center space-x-1.5 text-xs bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 px-2.5 py-1 rounded-lg">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                  <span className="font-semibold hidden sm:inline">Auto-Anotado</span>
+                </span>
+                {onOpenNote && (
+                  <button
+                    onClick={() => onOpenNote(autoAnnotatedNote.id)}
+                    className="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-2 py-1 rounded-lg flex items-center space-x-1 transition-colors cursor-pointer"
+                  >
+                    <FileText className="w-3 h-3 text-cyan-400" />
+                    <span>Ver Nota</span>
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Viewport: 3D/4D Hyperdimensional WebGL or 2D Canvas */}
+        {viewMode === '3d_4d' ? (
+          <div className="w-full">
+            <QuantumHyperdimensional3DViewer
+              interpretacion={interpretacion}
+              isPlaying={isPlaying}
+              speed={speed}
+              showTrails={showTrails}
+              showFields={showFields}
+              onStateUpdate={(nuevoEstado) => setEstado(nuevoEstado)}
+            />
+          </div>
+        ) : (
+          <div>
+            {/* The 60 FPS Live 2D Canvas */}
+            <div className="relative w-full flex items-center justify-center bg-slate-950">
+              <canvas
+                ref={canvasRef}
+                width={780}
+                height={380}
+                className="w-full max-h-[380px] object-contain cursor-crosshair"
+              />
+            </div>
+
+            {/* Video Player Control Toolbar (2D) */}
+            <div className="bg-slate-900/95 border-t border-slate-800 px-4 py-2.5 flex items-center justify-between flex-wrap gap-3">
+              {/* Playback Controls */}
+              <div className="flex items-center space-x-2">
                 <button
-                  key={s}
-                  onClick={() => setSpeed(s)}
-                  className={`px-2 py-1 rounded font-mono text-[11px] transition-colors ${
-                    speed === s
-                      ? 'bg-cyan-500 text-slate-950 font-bold'
-                      : 'text-slate-400 hover:text-slate-200'
+                  onClick={() => setIsPlaying(!isPlaying)}
+                  className={`p-2 rounded-lg font-medium text-xs flex items-center space-x-1.5 transition-all ${
+                    isPlaying
+                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30 hover:bg-amber-500/30'
+                      : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/30'
+                  }`}
+                  title={isPlaying ? 'Pausar Video' : 'Reproducir Video'}
+                >
+                  {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                  <span>{isPlaying ? 'Pausar' : 'Reanudar'}</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    timeRef.current = 0;
+                    stepRef.current = 0;
+                    const reset = simularPasoFisico(interpretacion.tipo, 0, 0);
+                    setEstado(reset);
+                  }}
+                  className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs flex items-center space-x-1 transition-colors"
+                  title="Reiniciar Simulación al Tiempo T=0"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Reiniciar</span>
+                </button>
+
+                {/* Speed control buttons */}
+                <div className="flex items-center bg-slate-950 rounded-lg p-0.5 border border-slate-800 text-xs">
+                  {[0.25, 0.5, 1.0, 2.0, 4.0].map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => setSpeed(s)}
+                      className={`px-2 py-1 rounded font-mono text-[11px] transition-colors ${
+                        speed === s
+                          ? 'bg-cyan-500 text-slate-950 font-bold'
+                          : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      {s}x
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Visual Overlays Toggles */}
+              <div className="flex items-center space-x-2 text-xs">
+                <button
+                  onClick={() => setShowGrid(!showGrid)}
+                  className={`px-2.5 py-1 rounded-lg border transition-colors ${
+                    showGrid
+                      ? 'bg-slate-800 border-slate-700 text-slate-200'
+                      : 'bg-slate-950 border-slate-800 text-slate-500'
                   }`}
                 >
-                  {s}x
+                  Cuadrícula
                 </button>
-              ))}
+                <button
+                  onClick={() => setShowTrails(!showTrails)}
+                  className={`px-2.5 py-1 rounded-lg border transition-colors ${
+                    showTrails
+                      ? 'bg-slate-800 border-slate-700 text-cyan-300'
+                      : 'bg-slate-950 border-slate-800 text-slate-500'
+                  }`}
+                >
+                  Estelas
+                </button>
+                <button
+                  onClick={() => setShowFields(!showFields)}
+                  className={`px-2.5 py-1 rounded-lg border transition-colors ${
+                    showFields
+                      ? 'bg-slate-800 border-slate-700 text-purple-300'
+                      : 'bg-slate-950 border-slate-800 text-slate-500'
+                  }`}
+                >
+                  Campos & Lóbulos
+                </button>
+              </div>
             </div>
           </div>
-
-          {/* Visual Overlays Toggles */}
-          <div className="flex items-center space-x-2 text-xs">
-            <button
-              onClick={() => setShowGrid(!showGrid)}
-              className={`px-2.5 py-1 rounded-lg border transition-colors ${
-                showGrid
-                  ? 'bg-slate-800 border-slate-700 text-slate-200'
-                  : 'bg-slate-950 border-slate-800 text-slate-500'
-              }`}
-            >
-              Cuadrícula
-            </button>
-            <button
-              onClick={() => setShowTrails(!showTrails)}
-              className={`px-2.5 py-1 rounded-lg border transition-colors ${
-                showTrails
-                  ? 'bg-slate-800 border-slate-700 text-cyan-300'
-                  : 'bg-slate-950 border-slate-800 text-slate-500'
-              }`}
-            >
-              Estelas
-            </button>
-            <button
-              onClick={() => setShowFields(!showFields)}
-              className={`px-2.5 py-1 rounded-lg border transition-colors ${
-                showFields
-                  ? 'bg-slate-800 border-slate-700 text-purple-300'
-                  : 'bg-slate-950 border-slate-800 text-slate-500'
-              }`}
-            >
-              Campos & Lóbulos
-            </button>
-          </div>
-        </div>
+        )}
       </div>
 
       {/* 4️⃣ MUESTRA VISIBLEMENTE LOS VALORES IMPORTANTES: Posición, Energía, Entrelazamiento, Superposición, Entropía */}

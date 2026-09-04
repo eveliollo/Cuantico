@@ -18,18 +18,23 @@ import {
   ChevronLeft,
   ChevronRight,
   Search,
+  Satellite,
+  Radio,
+  ArrowRight,
 } from 'lucide-react';
 
 interface SocximaEnginePanelProps {
   engine: SocximaEngine;
   onEngineUpdate: () => void;
   onSyncTwinNetwork?: (ciclo: number, hash: string) => void;
+  onNavigateToSatellite?: () => void;
 }
 
 export const SocximaEnginePanel: React.FC<SocximaEnginePanelProps> = ({
   engine,
   onEngineUpdate,
   onSyncTwinNetwork,
+  onNavigateToSatellite,
 }) => {
   const [isRunning, setIsRunning] = useState<boolean>(false);
   const [speedMs, setSpeedMs] = useState<number>(800); // interval ms
@@ -601,6 +606,35 @@ export const SocximaEnginePanel: React.FC<SocximaEnginePanelProps> = ({
           >
             Rotación de Fase Rz (en %3): {isPhaseTrigger ? 'ON' : 'OFF'}
           </span>
+        </div>
+
+        {/* Real-time Satellite Sync & Telemetry Banner */}
+        <div className="mt-4 p-3 bg-gradient-to-r from-cyan-950/40 via-slate-900 to-indigo-950/30 border border-cyan-500/30 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs font-mono">
+          <div className="flex items-center space-x-2.5">
+            <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center shrink-0">
+              <Satellite className="w-4 h-4 text-cyan-400 animate-pulse" />
+            </div>
+            <div>
+              <div className="flex items-center space-x-2">
+                <span className="font-bold text-white">Telemetría Satelital Real & Corrección Relativista</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                <span className="text-[10px] text-emerald-300">Conectado a ISS / Micius</span>
+              </div>
+              <p className="text-[11px] text-slate-400">
+                Sincronización orbital en tiempo real: reloj atómico espacial vs formulación cuántica de Socxima.
+              </p>
+            </div>
+          </div>
+
+          {onNavigateToSatellite && (
+            <button
+              onClick={onNavigateToSatellite}
+              className="px-3 py-1.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold rounded-lg text-xs flex items-center space-x-1.5 transition-all shrink-0 cursor-pointer shadow-md shadow-cyan-950/40"
+            >
+              <span>Ver Satélite & Comparar</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
       </div>
 

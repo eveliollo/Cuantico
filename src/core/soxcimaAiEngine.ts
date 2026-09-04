@@ -159,12 +159,128 @@ export function procesarConsultaSoxcima(
   pregunta: string,
   telemetry: ScientificQuantumTelemetry,
   notasExistentes: ScientificProjectNote[]
-): { respuesta: string; recordCreated: KnowledgeMemoryRecord } {
+): {
+  respuesta: string;
+  recordCreated: KnowledgeMemoryRecord;
+  simulationPayload?: {
+    systemKind: string;
+    systemName: string;
+    noteId: string;
+    noteTitle: string;
+    sha256Signature: string;
+    interpretacion?: InterpetacionFisica;
+  };
+} {
   const texto = pregunta.trim().toLowerCase();
   let respuesta = '';
+  let simulationPayload:
+    | {
+        systemKind: string;
+        systemName: string;
+        noteId: string;
+        noteTitle: string;
+        sha256Signature: string;
+        interpretacion?: InterpetacionFisica;
+      }
+    | undefined = undefined;
 
+  // 0. DETECCIÓN AUTOMÁTICA DE SISTEMA FÍSICO, CÓDIGO O CIRCUITO:
+  // Cumple la regla estricta: 1️⃣ Interpreta, 2️⃣ Simula con matemática exacta,
+  // 3️⃣ Dibuja continuo a 60 FPS, 4️⃣ Muestra valores clave, 5️⃣ Anota con SHA-256 sin pedir confirmación.
+  const esPeticionFisicaOCodigo =
+    texto.includes('atomo') ||
+    texto.includes('átomo') ||
+    texto.includes('hidrogeno') ||
+    texto.includes('hidrógeno') ||
+    texto.includes('bohr') ||
+    texto.includes('bell') ||
+    texto.includes('epr') ||
+    texto.includes('bloch') ||
+    texto.includes('oscilador') ||
+    texto.includes('armonico') ||
+    texto.includes('armónico') ||
+    texto.includes('pozo') ||
+    texto.includes('particula') ||
+    texto.includes('partícula') ||
+    texto.includes('colision') ||
+    texto.includes('colisión') ||
+    texto.includes('rutherford') ||
+    texto.includes('dispersion') ||
+    texto.includes('dispersión') ||
+    texto.includes('ising') ||
+    texto.includes('spin') ||
+    texto.includes('espin') ||
+    texto.includes('espín') ||
+    texto.includes('rendija') ||
+    texto.includes('slit') ||
+    texto.includes('interferen') ||
+    texto.includes('circuito') ||
+    texto.includes('circuit') ||
+    texto.includes('qasm') ||
+    texto.includes('openqasm') ||
+    texto.includes('hamiltonian') ||
+    texto.includes('schrodinger') ||
+    texto.includes('schrödinger') ||
+    texto.includes('def ') ||
+    texto.includes('import ') ||
+    texto.includes('class ') ||
+    texto.startsWith('//') ||
+    texto.startsWith('#') ||
+    texto.includes('simular') ||
+    texto.includes('simula ') ||
+    texto.includes('simulacion visual') ||
+    texto.includes('simulación visual') ||
+    texto.includes('video en vivo');
+
+  if (esPeticionFisicaOCodigo) {
+    // 1️⃣ INTERPRETAR
+    const interpretacion = interpretarSistemaFisico(pregunta);
+    // 2️⃣ SIMULAR MATEMÁTICA EXACTA
+    const estadoSimulado = simularPasoFisico(interpretacion.tipo, 0, 0);
+    // 5️⃣ ANOTAR AUTOMÁTICAMENTE EN LA BASE DE NOTAS CON HASH SHA-256
+    const { notaCreada, hashFirma } = autoAnotarEnBaseDeNotas(interpretacion, estadoSimulado, pregunta);
+
+    simulationPayload = {
+      systemKind: interpretacion.tipo,
+      systemName: interpretacion.nombre,
+      noteId: notaCreada.id,
+      noteTitle: notaCreada.title,
+      sha256Signature: hashFirma,
+      interpretacion,
+    };
+
+    respuesta = `🎬 SIMULACIÓN FÍSICA EN TIEMPO REAL INICIADA (VIDEO 60 FPS):
+
+1️⃣ INTERPRETACIÓN FÍSICA:
+• Sistema Identificado: ${interpretacion.nombre}
+• Subtítulo: ${interpretacion.subtitulo}
+• Formulación / Hamiltoniano: ${interpretacion.hamiltonianoOFormula}
+• Leyes que lo rigen:
+${interpretacion.leyesGobernantes.map((l, i) => `  [${i + 1}] ${l}`).join('\n')}
+
+2️⃣ SIMULACIÓN EXACTA SIN APROXIMACIONES:
+• Posición Inicial (x, y, z): (${estadoSimulado.posicionPrincipal.x.toFixed(1)}, ${estadoSimulado.posicionPrincipal.y.toFixed(1)}, ${estadoSimulado.posicionPrincipal.z.toFixed(1)})
+• Energía Mecánica Total E: ${estadoSimulado.energiaTotal.toFixed(4)} eV (Cin: ${estadoSimulado.energiaCinetica.toFixed(2)}, Pot: ${estadoSimulado.energiaPotencial.toFixed(2)})
+• Entropía de Von Neumann: ${estadoSimulado.entrelazamientoEntropia.toFixed(4)} bits
+• Superposiciones Activas: ${estadoSimulado.superposicionCount} estados
+• Regla de Born Preservada: ${estadoSimulado.normaProbabilidad.toFixed(8)}
+
+3️⃣ DIBUJO CONTINUO EN VIVO (VIDEO 60 FPS):
+• Reproductor activo renderizando partículas, vectores de fase cuántica, estelas y campos en pantalla.
+
+4️⃣ VALORES EN TIEMPO REAL:
+• Todos los valores cinemáticos, energéticos y termodinámicos se actualizan cuadro a cuadro en el panel inferior del video.
+
+5️⃣ ANOTACIÓN AUTOMÁTICA EN BASE DE NOTAS CIENTÍFICAS:
+• ✅ Título: "${notaCreada.title}"
+• 🔐 Sello Criptográfico SHA-256: ${hashFirma}
+• 📌 ID de Registro Inmutable: ${notaCreada.id}
+
+Todo procesado y registrado automáticamente sin pedir confirmación adicional.
+${SOXCIMA_FIRMA}`;
+  }
   // 1. Saludo básico según script
-  if (texto === 'hola' || texto.startsWith('hola ') || texto.startsWith('buenos dias') || texto.startsWith('buenas')) {
+  else if (texto === 'hola' || texto.startsWith('hola ') || texto.startsWith('buenos dias') || texto.startsWith('buenas')) {
     respuesta = `${SOXCIMA_SALUDO}\n\nEstoy lista para entregar los resultados cuánticos en tiempo real y gestionar la base de notas de tus proyectos científicos.\n${SOXCIMA_FIRMA}`;
   }
   // 2. Operaciones aritméticas según script: (\d+)\s*([+*/×-])\s*(\d+)
@@ -288,7 +404,7 @@ ${SOXCIMA_FIRMA}`;
     fecha: new Date().toISOString().replace('T', ' ').substring(0, 19),
   };
 
-  return { respuesta, recordCreated };
+  return { respuesta, recordCreated, simulationPayload };
 }
 
 /**

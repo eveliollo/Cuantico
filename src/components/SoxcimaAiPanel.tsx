@@ -24,7 +24,13 @@ import {
   ChevronRight,
   ExternalLink,
   MessageSquare,
-  Bookmark
+  Bookmark,
+  Video,
+  Play,
+  Pause,
+  Layers,
+  Zap,
+  Sliders
 } from 'lucide-react';
 import {
   ScientificProjectNote,
@@ -47,6 +53,14 @@ import {
   generarRevisionCientificaNota,
   SCRIPT_PYTHON_TERMUX,
 } from '../core/soxcimaAiEngine';
+import {
+  interpretarSistemaFisico,
+  simularPasoFisico,
+  autoAnotarEnBaseDeNotas,
+  InterpetacionFisica,
+  PhysicalSystemKind,
+} from '../core/physicsSimulationEngine';
+import { LivePhysicsVideoRenderer } from './LivePhysicsVideoRenderer';
 import { SocximaEngine } from '../core/socximaEngine';
 
 interface SoxcimaAiPanelProps {
@@ -62,7 +76,14 @@ export const SoxcimaAiPanel: React.FC<SoxcimaAiPanelProps> = ({
   signerPublicKey,
 }) => {
   // Panel Active Sub-Tab
-  const [activeSubTab, setActiveSubTab] = useState<'ia_chat' | 'lab_notes' | 'sqlite_memory' | 'termux_script'>('ia_chat');
+  const [activeSubTab, setActiveSubTab] = useState<'ia_chat' | 'physics_video' | 'lab_notes' | 'sqlite_memory' | 'termux_script'>('ia_chat');
+
+  // Live Physics Simulation State
+  const [activePhysicsInterpretation, setActivePhysicsInterpretation] = useState<InterpetacionFisica>(() =>
+    interpretarSistemaFisico('atomo de hidrogeno')
+  );
+  const [customPhysicsInput, setCustomPhysicsInput] = useState<string>('');
+  const [lastAutoAnnotatedNote, setLastAutoAnnotatedNote] = useState<ScientificProjectNote | null>(null);
 
   // Scientific Notes State
   const [notes, setNotes] = useState<ScientificProjectNote[]>(() => loadScientificNotes());
@@ -150,7 +171,7 @@ export const SoxcimaAiPanel: React.FC<SoxcimaAiPanelProps> = ({
     setIsProcessing(true);
 
     setTimeout(() => {
-      const { respuesta, recordCreated } = procesarConsultaSoxcima(textToSend, currentTelemetry, notes);
+      const { respuesta, recordCreated, simulationPayload } = procesarConsultaSoxcima(textToSend, currentTelemetry, notes);
 
       const iaMsg: SoxcimaChatMessage = {
         id: `msg_ia_${Date.now()}`,
@@ -158,6 +179,7 @@ export const SoxcimaAiPanel: React.FC<SoxcimaAiPanelProps> = ({
         text: respuesta,
         timestamp: Date.now(),
         telemetrySnapshot: currentTelemetry,
+        simulationPayload,
       };
 
       setMessages(prev => [...prev, iaMsg]);
@@ -166,8 +188,33 @@ export const SoxcimaAiPanel: React.FC<SoxcimaAiPanelProps> = ({
         saveKnowledgeMemory(next);
         return next;
       });
+      if (simulationPayload) {
+        const updatedNotes = loadScientificNotes();
+        setNotes(updatedNotes);
+        if (simulationPayload.interpretacion) {
+          setActivePhysicsInterpretation(simulationPayload.interpretacion);
+        }
+        const created = updatedNotes.find(n => n.id === simulationPayload.noteId) || null;
+        setLastAutoAnnotatedNote(created);
+      }
       setIsProcessing(false);
     }, 280);
+  };
+
+  // Open a specific note by ID in the lab notes tab
+  const handleOpenNoteById = (noteId: string) => {
+    setActiveSubTab('lab_notes');
+    setActiveNoteId(noteId);
+  };
+
+  // Directly execute simulation, video rendering and auto-annotation for a given input
+  const handleExecutePhysicsSimulation = (inputPrompt: string) => {
+    const interp = interpretarSistemaFisico(inputPrompt);
+    setActivePhysicsInterpretation(interp);
+    const est = simularPasoFisico(interp.tipo, 0, 0);
+    const { notaCreada } = autoAnotarEnBaseDeNotas(interp, est, inputPrompt);
+    setLastAutoAnnotatedNote(notaCreada);
+    setNotes(loadScientificNotes());
   };
 
   // Open Create Note Form
@@ -493,6 +540,18 @@ ${SOXCIMA_FIRMA}
           </button>
 
           <button
+            onClick={() => setActiveSubTab('physics_video')}
+            className={`flex items-center space-x-2 px-3.5 py-1.5 rounded-lg font-semibold transition-all ${
+              activeSubTab === 'physics_video'
+                ? 'bg-rose-500 text-slate-950 shadow-md shadow-rose-500/30'
+                : 'text-slate-300 hover:text-white hover:bg-slate-900/60'
+            }`}
+          >
+            <Video className="w-3.5 h-3.5 text-rose-400" />
+            <span>Simulador Físico En Vivo (60 FPS)</span>
+          </button>
+
+          <button
             onClick={() => setActiveSubTab('lab_notes')}
             className={`flex items-center space-x-2 px-3.5 py-1.5 rounded-lg font-semibold transition-all ${
               activeSubTab === 'lab_notes'
@@ -607,6 +666,17 @@ ${SOXCIMA_FIRMA}
                           </span>
                         </div>
                       )}
+
+                      {/* Video Player de Simulación Física Cuántica en Vivo a 60 FPS */}
+                      {msg.simulationPayload && msg.simulationPayload.interpretacion && !isUser && (
+                        <div className="mt-4 pt-3 border-t border-slate-700/60">
+                          <LivePhysicsVideoRenderer
+                            interpretacion={msg.simulationPayload.interpretacion}
+                            autoAnnotatedNote={notes.find(n => n.id === msg.simulationPayload?.noteId) || null}
+                            onOpenNote={handleOpenNoteById}
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
@@ -616,7 +686,7 @@ ${SOXCIMA_FIRMA}
                 <div className="flex flex-col items-start">
                   <div className="p-3 bg-slate-900 border border-slate-800 rounded-2xl rounded-tl-none text-xs text-teal-300 flex items-center space-x-2 font-mono">
                     <RefreshCw className="w-3.5 h-3.5 animate-spin text-teal-400" />
-                    <span>SOXCIMA procesando conocimiento y telemetría cuántica...</span>
+                    <span>SOXCIMA interpretando sistema físico y calculando matemática exacta a 60 FPS...</span>
                   </div>
                 </div>
               )}
@@ -628,10 +698,37 @@ ${SOXCIMA_FIRMA}
             <div className="p-2.5 bg-slate-950/80 border-t border-slate-800/80 flex flex-wrap gap-1.5 overflow-x-auto text-xs font-mono">
               <span className="text-[11px] text-slate-500 py-1 pl-1">Sugerencias:</span>
               <button
+                onClick={() => handleSendQuery('Simular átomo de hidrógeno con orbitales y niveles de Schrödinger')}
+                className="px-2.5 py-1 rounded bg-rose-950/40 border border-rose-700/40 text-rose-300 hover:text-white hover:bg-rose-900/60 text-[11px] transition-colors flex items-center gap-1"
+              >
+                <Video className="w-3 h-3 text-rose-400" />
+                <span>⚛️ Simular Átomo Hidrógeno</span>
+              </button>
+              <button
+                onClick={() => handleSendQuery('Simular par Bell entrelazado EPR con esferas de Bloch')}
+                className="px-2.5 py-1 rounded bg-rose-950/40 border border-rose-700/40 text-rose-300 hover:text-white hover:bg-rose-900/60 text-[11px] transition-colors flex items-center gap-1"
+              >
+                <Video className="w-3 h-3 text-rose-400" />
+                <span>🌀 Simular Par Bell</span>
+              </button>
+              <button
+                onClick={() => handleSendQuery('Simular experimento de la doble rendija cuántica y franjas de interferencia')}
+                className="px-2.5 py-1 rounded bg-rose-950/40 border border-rose-700/40 text-rose-300 hover:text-white hover:bg-rose-900/60 text-[11px] transition-colors flex items-center gap-1"
+              >
+                <Video className="w-3 h-3 text-rose-400" />
+                <span>〰️ Doble Rendija</span>
+              </button>
+              <button
                 onClick={() => handleSendQuery('¿Cuáles son los resultados actuales de la simulación cuántica?')}
                 className="px-2.5 py-1 rounded bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:border-teal-500/40 text-[11px] transition-colors"
               >
                 📊 Resultados actuales
+              </button>
+              <button
+                onClick={() => handleSendQuery('¿Qué proyectos científicos tenemos en la base de notas?')}
+                className="px-2.5 py-1 rounded bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:border-teal-500/40 text-[11px] transition-colors"
+              >
+                📝 Ver base de notas
               </button>
               <button
                 onClick={() => handleSendQuery('Explica el estado de entrelazamiento en el SistemaGemelos y la correlación Bell')}
@@ -784,6 +881,197 @@ ${SOXCIMA_FIRMA}
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* SUB-TAB: SIMULADOR FÍSICO EN VIVO (VIDEO 60 FPS)                          */}
+      {/* ========================================================================= */}
+      {activeSubTab === 'physics_video' && (
+        <div className="space-y-6">
+          {/* Top Info & Quick Presets Header */}
+          <div className="bg-gradient-to-r from-rose-950/40 via-slate-900/90 to-purple-950/40 border border-rose-500/30 rounded-2xl p-5 shadow-xl">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 rounded-xl bg-rose-500/20 text-rose-400 border border-rose-500/30">
+                    <Video className="w-5 h-5 animate-pulse" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-white flex items-center gap-2">
+                      Simulación Física en Tiempo Real a 60 FPS
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-rose-500/20 text-rose-300 border border-rose-500/40">
+                        HD Canvas • Exact Math
+                      </span>
+                    </h3>
+                    <p className="text-xs text-slate-300 mt-0.5">
+                      Ingresa cualquier código, circuito, sistema de partículas o átomo: SOXCIMA interpreta, simula con matemática exacta, dibuja el video continuo en vivo, proyecta valores y auto-anota con firma SHA-256 inmutable.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* 5-Step Pipeline Badges */}
+              <div className="flex flex-wrap gap-1.5 font-mono text-[10px] text-slate-300 shrink-0">
+                <span className="px-2 py-1 bg-slate-950 rounded border border-slate-800 text-teal-300">1️⃣ Interpreta</span>
+                <span className="px-2 py-1 bg-slate-950 rounded border border-slate-800 text-cyan-300">2️⃣ Simula Exacto</span>
+                <span className="px-2 py-1 bg-slate-950 rounded border border-slate-800 text-rose-300">3️⃣ Video 60 FPS</span>
+                <span className="px-2 py-1 bg-slate-950 rounded border border-slate-800 text-amber-300">4️⃣ Telemetría</span>
+                <span className="px-2 py-1 bg-slate-950 rounded border border-slate-800 text-purple-300">5️⃣ Anota SHA-256</span>
+              </div>
+            </div>
+
+            {/* Quick Presets Selection Bar */}
+            <div className="mt-4 pt-3 border-t border-slate-800/80">
+              <span className="text-[11px] font-mono text-slate-400 block mb-2">
+                Sistemas Físicos Preconfigurados (Click para Simular y Auto-Anotar al Instante):
+              </span>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+                <button
+                  onClick={() => handleExecutePhysicsSimulation('átomo de hidrógeno orbitales Schrödinger Coulomb')}
+                  className="p-2.5 rounded-xl bg-slate-950 hover:bg-rose-950/40 border border-slate-800 hover:border-rose-500/50 text-left transition-all group cursor-pointer"
+                >
+                  <div className="text-xs font-bold text-rose-300 group-hover:text-rose-200 flex items-center gap-1.5">
+                    <span>⚛️</span>
+                    <span>Átomo Hidrógeno</span>
+                  </div>
+                  <div className="text-[10px] text-slate-400 font-mono mt-0.5">Schrödinger & Coulomb</div>
+                </button>
+
+                <button
+                  onClick={() => handleExecutePhysicsSimulation('par bell entrelazamiento cuántico violación CHSH y esferas de Bloch')}
+                  className="p-2.5 rounded-xl bg-slate-950 hover:bg-purple-950/40 border border-slate-800 hover:border-purple-500/50 text-left transition-all group cursor-pointer"
+                >
+                  <div className="text-xs font-bold text-purple-300 group-hover:text-purple-200 flex items-center gap-1.5">
+                    <span>🌀</span>
+                    <span>Par Bell EPR</span>
+                  </div>
+                  <div className="text-[10px] text-slate-400 font-mono mt-0.5">Bloch & Violación CHSH</div>
+                </button>
+
+                <button
+                  onClick={() => handleExecutePhysicsSimulation('oscilador armónico cuántico paquete de ondas gaussiano')}
+                  className="p-2.5 rounded-xl bg-slate-950 hover:bg-cyan-950/40 border border-slate-800 hover:border-cyan-500/50 text-left transition-all group cursor-pointer"
+                >
+                  <div className="text-xs font-bold text-cyan-300 group-hover:text-cyan-200 flex items-center gap-1.5">
+                    <span>🌊</span>
+                    <span>Oscilador Armónico</span>
+                  </div>
+                  <div className="text-[10px] text-slate-400 font-mono mt-0.5">Paquete de Onda Coherente</div>
+                </button>
+
+                <button
+                  onClick={() => handleExecutePhysicsSimulation('colisión y dispersión de rutherford partículas alfa')}
+                  className="p-2.5 rounded-xl bg-slate-950 hover:bg-amber-950/40 border border-slate-800 hover:border-amber-500/50 text-left transition-all group cursor-pointer"
+                >
+                  <div className="text-xs font-bold text-amber-300 group-hover:text-amber-200 flex items-center gap-1.5">
+                    <span>💥</span>
+                    <span>Dispersión Rutherford</span>
+                  </div>
+                  <div className="text-[10px] text-slate-400 font-mono mt-0.5">Partículas Alfa & Oro</div>
+                </button>
+
+                <button
+                  onClick={() => handleExecutePhysicsSimulation('cadena cuántica de espines 1D modelo ising magnones')}
+                  className="p-2.5 rounded-xl bg-slate-950 hover:bg-teal-950/40 border border-slate-800 hover:border-teal-500/50 text-left transition-all group cursor-pointer"
+                >
+                  <div className="text-xs font-bold text-teal-300 group-hover:text-teal-200 flex items-center gap-1.5">
+                    <span>🧲</span>
+                    <span>Cadena de Ising</span>
+                  </div>
+                  <div className="text-[10px] text-slate-400 font-mono mt-0.5">Espines 1D & Transición Fase</div>
+                </button>
+
+                <button
+                  onClick={() => handleExecutePhysicsSimulation('experimento cuántico de la doble rendija difracción interferencia')}
+                  className="p-2.5 rounded-xl bg-slate-950 hover:bg-emerald-950/40 border border-slate-800 hover:border-emerald-500/50 text-left transition-all group cursor-pointer"
+                >
+                  <div className="text-xs font-bold text-emerald-300 group-hover:text-emerald-200 flex items-center gap-1.5">
+                    <span>〰️</span>
+                    <span>Doble Rendija</span>
+                  </div>
+                  <div className="text-[10px] text-slate-400 font-mono mt-0.5">Interferencia & Franjas Born</div>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Custom Input Section */}
+          <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-lg space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold font-mono text-slate-300 flex items-center gap-2">
+                <Terminal className="w-4 h-4 text-rose-400" />
+                Ingresa cualquier Código Fuente, Circuito (QASM), Hamiltoniano o Sistema Físico:
+              </label>
+              <span className="text-[11px] font-mono text-slate-500">
+                Soporta Python, OpenQASM, Notación Dirac y Ecuaciones
+              </span>
+            </div>
+
+            <div className="relative">
+              <textarea
+                value={customPhysicsInput}
+                onChange={(e) => setCustomPhysicsInput(e.target.value)}
+                placeholder="Ejemplos que puedes pegar aquí:
+• OPENQASM 2.0; qreg q[4]; h q[0]; cx q[0], q[1];
+• H = -J * sum(sigma_z * sigma_z) - h * sum(sigma_x)
+• Simular átomo de hidrógeno con orbitales Schrödinger y constante de Rydberg
+• Partículas alfa disparadas hacia núcleo de Au 79+ con energía 5.5 MeV
+• def simular_colision(particulas, potencial_coulomb): ..."
+                rows={4}
+                className="w-full p-3.5 bg-slate-950 border border-slate-800 rounded-xl text-xs sm:text-sm font-mono text-slate-200 placeholder-slate-600 focus:outline-none focus:border-rose-500 transition-colors"
+              />
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+              <div className="flex flex-wrap items-center gap-1.5 text-[11px] font-mono text-slate-400">
+                <span className="text-slate-500">Plantillas rápidas:</span>
+                <button
+                  type="button"
+                  onClick={() => setCustomPhysicsInput('OPENQASM 2.0;\ninclude "qelib1.inc";\nqreg q[4];\ncreg c[4];\nh q[0];\ncx q[0], q[1];\ncx q[1], q[2];\nbarrier q;\nmeasure q -> c;')}
+                  className="px-2 py-0.5 rounded bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white cursor-pointer"
+                >
+                  Circuito QASM 4Q
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCustomPhysicsInput('Hamiltoniano de Heisenberg Ising 1D:\nH = -J * sum(S_i^z * S_{i+1}^z) - h * sum(S_i^x)\nJ = 1.0 J, h = 0.85 T, N = 16 espines')}
+                  className="px-2 py-0.5 rounded bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white cursor-pointer"
+                >
+                  Ising Spin Chain
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCustomPhysicsInput('Colisión Rutherford:\nPartícula alfa (q1=+2e, m=4u, E0=5.5 MeV) dispersada por núcleo de oro Au (q2=+79e).\nCalcular trayectoria hiperbólica exacta y ángulo theta.')}
+                  className="px-2 py-0.5 rounded bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white cursor-pointer"
+                >
+                  Dispersión Rutherford
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (!customPhysicsInput.trim()) return;
+                  handleExecutePhysicsSimulation(customPhysicsInput);
+                }}
+                disabled={!customPhysicsInput.trim()}
+                className="px-5 py-2.5 bg-gradient-to-r from-rose-500 via-pink-500 to-purple-500 hover:from-rose-400 hover:to-purple-400 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-lg transition-all flex items-center space-x-2 active:scale-95 cursor-pointer"
+              >
+                <Zap className="w-4 h-4 text-amber-300" />
+                <span>Interpretar, Simular y Auto-Anotar (60 FPS)</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Active Live Video Simulation Canvas */}
+          <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+            <LivePhysicsVideoRenderer
+              interpretacion={activePhysicsInterpretation}
+              autoAnnotatedNote={lastAutoAnnotatedNote}
+              onOpenNote={handleOpenNoteById}
+            />
           </div>
         </div>
       )}

@@ -48,6 +48,7 @@ export interface SoxcimaChatMessage {
     noteId: string;
     noteTitle: string;
     sha256Signature: string;
+    interpretacion?: any;
   };
 }
 

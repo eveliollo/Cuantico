@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { GatePlacement, GateType } from '../types/quantum';
-import { Play, RotateCcw, ShieldCheck, Sparkles, Plus, Trash2, FileCode2, Share2 } from 'lucide-react';
+import { GatePlacement, GateType, SimulationResult } from '../types/quantum';
+import { Play, RotateCcw, ShieldCheck, Sparkles, Plus, Trash2, FileCode2, Share2, Box, Radio, Layers } from 'lucide-react';
 import { QuantumAssemblyModal } from './QuantumAssemblyModal';
+import { QuantumBlochHyperdimensionalScene } from './QuantumBlochHyperdimensionalScene';
+import { SocximaEngine } from '../core/socximaEngine';
 
 interface CircuitComposerProps {
   qubitCount: number;
@@ -12,6 +14,8 @@ interface CircuitComposerProps {
   onSignAndCommit: () => void;
   isSimulating: boolean;
   onSaveAssemblyToLedger?: (assemblyJson: string, assemblyHash: string, circuitName: string) => Promise<void> | void;
+  simulationResult?: SimulationResult;
+  engine?: SocximaEngine;
 }
 
 const SINGLE_GATES: { type: GateType; label: string; desc: string; color: string }[] = [
@@ -43,11 +47,15 @@ export const CircuitComposer: React.FC<CircuitComposerProps> = ({
   onSignAndCommit,
   isSimulating,
   onSaveAssemblyToLedger,
+  simulationResult,
+  engine,
 }) => {
   const [selectedGateType, setSelectedGateType] = useState<GateType>('H');
   const [controlQubit, setControlQubit] = useState<number>(0);
   const [shots, setShots] = useState<number>(1024);
   const [isExportModalOpen, setIsExportModalOpen] = useState<boolean>(false);
+  const [composerView, setComposerView] = useState<'dual' | '3d' | 'circuit'>('dual');
+  const [selectedCircuitQubit, setSelectedCircuitQubit] = useState<number>(0);
 
   // Load Presets
   const applyPreset = (presetName: string) => {
@@ -219,6 +227,49 @@ export const CircuitComposer: React.FC<CircuitComposerProps> = ({
           </div>
         </div>
 
+        {/* View Mode Switcher */}
+        <div className="flex items-center space-x-1 bg-slate-950 p-1 rounded-xl border border-slate-800 font-mono text-xs">
+          <button
+            id="composer-view-dual"
+            onClick={() => setComposerView('dual')}
+            className={`px-3 py-1.5 rounded-lg flex items-center space-x-1.5 transition-all font-semibold ${
+              composerView === 'dual'
+                ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-950/40 font-bold'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+            title="Dual View: Circuit Wires + Three.js 3D Bloch Sphere & 6,000-Qubit Hyperdimensional Grid"
+          >
+            <Box className="w-3.5 h-3.5" />
+            <span>Dual View (Wires + 3D Grid)</span>
+          </button>
+          <button
+            id="composer-view-3d"
+            onClick={() => setComposerView('3d')}
+            className={`px-3 py-1.5 rounded-lg flex items-center space-x-1.5 transition-all font-semibold ${
+              composerView === '3d'
+                ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-950/40 font-bold'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+            title="Expanded 3D Bloch Sphere & 6,000 Qubits Scene"
+          >
+            <Radio className="w-3.5 h-3.5 text-amber-300 animate-pulse" />
+            <span>3D Bloch & 6,000 Qubits</span>
+          </button>
+          <button
+            id="composer-view-circuit"
+            onClick={() => setComposerView('circuit')}
+            className={`px-3 py-1.5 rounded-lg flex items-center space-x-1.5 transition-all font-semibold ${
+              composerView === 'circuit'
+                ? 'bg-slate-800 text-cyan-300 border border-slate-700'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+            title="Circuit Wires Matrix Only"
+          >
+            <Layers className="w-3.5 h-3.5" />
+            <span>Wires Only</span>
+          </button>
+        </div>
+
         {/* Action buttons */}
         <div className="flex items-center space-x-2">
           {/* Shots */}
@@ -339,107 +390,131 @@ export const CircuitComposer: React.FC<CircuitComposerProps> = ({
         </div>
       </div>
 
-      {/* Circuit Grid Wireframe */}
-      <div className="mt-4 overflow-x-auto pb-2">
-        <div className="min-w-[640px] select-none">
-          {/* Step header */}
-          <div className="grid grid-cols-[80px_repeat(8,1fr)] gap-2 mb-2 text-[10px] font-mono text-slate-500 text-center">
-            <div className="text-left pl-2">Wire</div>
-            {Array.from({ length: MAX_STEPS }).map((_, step) => (
-              <div key={step} className="bg-slate-950/40 py-0.5 rounded">
-                Step {step + 1}
+      {/* Circuit Grid Wireframe (Shown in 'dual' and 'circuit' modes) */}
+      {composerView !== '3d' && (
+        <div className="mt-4 overflow-x-auto pb-2">
+          <div className="min-w-[640px] select-none">
+            {/* Step header */}
+            <div className="grid grid-cols-[80px_repeat(8,1fr)] gap-2 mb-2 text-[10px] font-mono text-slate-500 text-center">
+              <div className="text-left pl-2">Wire</div>
+              {Array.from({ length: MAX_STEPS }).map((_, step) => (
+                <div key={step} className="bg-slate-950/40 py-0.5 rounded">
+                  Step {step + 1}
+                </div>
+              ))}
+            </div>
+
+            {/* Qubit wires */}
+            {Array.from({ length: qubitCount }).map((_, qIndex) => (
+              <div
+                key={qIndex}
+                className="grid grid-cols-[80px_repeat(8,1fr)] gap-2 items-center py-2.5 group relative"
+              >
+                {/* Qubit Label (Clickable to focus on 3D Bloch sphere) */}
+                <div
+                  onClick={() => setSelectedCircuitQubit(qIndex)}
+                  className={`flex items-center space-x-2 pl-2 cursor-pointer p-1 rounded-lg transition-all ${
+                    selectedCircuitQubit === qIndex
+                      ? 'bg-emerald-500/20 text-emerald-300 ring-1 ring-emerald-500/50'
+                      : 'hover:bg-slate-800/80 text-slate-200'
+                  }`}
+                  title={`Focus Qubit q[${qIndex}] in 3D Bloch Scene`}
+                >
+                  <span className={`w-2 h-2 rounded-full ${selectedCircuitQubit === qIndex ? 'bg-emerald-400 ring-2 ring-emerald-300 animate-pulse' : 'bg-emerald-400'}`} />
+                  <span className="font-mono text-xs font-bold">
+                    q[{qIndex}]
+                  </span>
+                  <span className="text-[10px] font-mono text-slate-500">|0⟩</span>
+                </div>
+
+                {/* Wire slots */}
+                {Array.from({ length: MAX_STEPS }).map((_, step) => {
+                  const gate = gates.find(g => g.targetQubit === qIndex && g.step === step);
+                  const isControlForGate = gates.find(
+                    g => g.controlQubit === qIndex && g.step === step
+                  );
+
+                  return (
+                    <div
+                      key={step}
+                      onClick={() => handleCellClick(qIndex, step)}
+                      className="relative h-12 flex items-center justify-center cursor-pointer group/cell"
+                    >
+                      {/* Horizontal wire line */}
+                      <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-[2px] bg-slate-700/80 group-hover/cell:bg-emerald-500/50 transition-colors" />
+
+                      {/* Vertical connector line if multi-qubit gate */}
+                      {gate && gate.controlQubit !== undefined && (
+                        <div
+                          className="absolute w-[2px] bg-emerald-400 z-10"
+                          style={{
+                            top: gate.controlQubit < qIndex ? '-100%' : '50%',
+                            bottom: gate.controlQubit > qIndex ? '-100%' : '50%',
+                            height: `${Math.abs(gate.controlQubit - qIndex) * 100 + 50}%`,
+                            transform: gate.controlQubit < qIndex ? `translateY(-${(qIndex - gate.controlQubit) * 48}px)` : 'none'
+                          }}
+                        />
+                      )}
+
+                      {/* Control Dot if this qubit is controlling a multi-qubit gate on this step */}
+                      {isControlForGate && (
+                        <div className="relative z-20 w-3.5 h-3.5 rounded-full bg-emerald-400 border-2 border-slate-950 shadow-md" />
+                      )}
+
+                      {/* Gate Item */}
+                      {gate && (
+                        <div
+                          className={`relative z-20 w-10 h-10 rounded-lg flex flex-col items-center justify-center font-mono font-bold text-xs border shadow-lg transition-transform hover:scale-110 ${
+                            gate.type === 'H' ? 'bg-indigo-600/80 text-white border-indigo-400' :
+                            gate.type === 'CNOT' ? 'bg-emerald-600/80 text-white border-emerald-400' :
+                            gate.type === 'X' ? 'bg-emerald-700/80 text-white border-emerald-400' :
+                            gate.type === 'CZ' ? 'bg-cyan-600/80 text-white border-cyan-400' :
+                            gate.type === 'SWAP' ? 'bg-amber-600/80 text-white border-amber-400' :
+                            'bg-slate-800 text-emerald-300 border-slate-600'
+                          }`}
+                        >
+                          <span>{gate.type}</span>
+                          {gate.controlQubit !== undefined && (
+                            <span className="text-[8px] text-slate-300 font-normal">c:{gate.controlQubit}</span>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Ghost gate hover preview */}
+                      {!gate && !isControlForGate && (
+                        <div className="w-8 h-8 rounded border border-dashed border-slate-700/40 flex items-center justify-center opacity-0 group-hover/cell:opacity-100 transition-opacity z-10 bg-slate-900/60">
+                          <Plus className="w-3.5 h-3.5 text-slate-500" />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             ))}
           </div>
-
-          {/* Qubit wires */}
-          {Array.from({ length: qubitCount }).map((_, qIndex) => (
-            <div
-              key={qIndex}
-              className="grid grid-cols-[80px_repeat(8,1fr)] gap-2 items-center py-2.5 group relative"
-            >
-              {/* Qubit Label */}
-              <div className="flex items-center space-x-2 pl-2">
-                <span className="w-2 h-2 rounded-full bg-emerald-400" />
-                <span className="font-mono text-xs font-bold text-slate-200">
-                  q[{qIndex}]
-                </span>
-                <span className="text-[10px] font-mono text-slate-500">|0⟩</span>
-              </div>
-
-              {/* Wire slots */}
-              {Array.from({ length: MAX_STEPS }).map((_, step) => {
-                const gate = gates.find(g => g.targetQubit === qIndex && g.step === step);
-                const isControlForGate = gates.find(
-                  g => g.controlQubit === qIndex && g.step === step
-                );
-
-                return (
-                  <div
-                    key={step}
-                    onClick={() => handleCellClick(qIndex, step)}
-                    className="relative h-12 flex items-center justify-center cursor-pointer group/cell"
-                  >
-                    {/* Horizontal wire line */}
-                    <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-[2px] bg-slate-700/80 group-hover/cell:bg-emerald-500/50 transition-colors" />
-
-                    {/* Vertical connector line if multi-qubit gate */}
-                    {gate && gate.controlQubit !== undefined && (
-                      <div
-                        className="absolute w-[2px] bg-emerald-400 z-10"
-                        style={{
-                          top: gate.controlQubit < qIndex ? '-100%' : '50%',
-                          bottom: gate.controlQubit > qIndex ? '-100%' : '50%',
-                          height: `${Math.abs(gate.controlQubit - qIndex) * 100 + 50}%`,
-                          transform: gate.controlQubit < qIndex ? `translateY(-${(qIndex - gate.controlQubit) * 48}px)` : 'none'
-                        }}
-                      />
-                    )}
-
-                    {/* Control Dot if this qubit is controlling a multi-qubit gate on this step */}
-                    {isControlForGate && (
-                      <div className="relative z-20 w-3.5 h-3.5 rounded-full bg-emerald-400 border-2 border-slate-950 shadow-md" />
-                    )}
-
-                    {/* Gate Item */}
-                    {gate && (
-                      <div
-                        className={`relative z-20 w-10 h-10 rounded-lg flex flex-col items-center justify-center font-mono font-bold text-xs border shadow-lg transition-transform hover:scale-110 ${
-                          gate.type === 'H' ? 'bg-indigo-600/80 text-white border-indigo-400' :
-                          gate.type === 'CNOT' ? 'bg-emerald-600/80 text-white border-emerald-400' :
-                          gate.type === 'X' ? 'bg-emerald-700/80 text-white border-emerald-400' :
-                          gate.type === 'CZ' ? 'bg-cyan-600/80 text-white border-cyan-400' :
-                          gate.type === 'SWAP' ? 'bg-amber-600/80 text-white border-amber-400' :
-                          'bg-slate-800 text-emerald-300 border-slate-600'
-                        }`}
-                      >
-                        <span>{gate.type}</span>
-                        {gate.controlQubit !== undefined && (
-                          <span className="text-[8px] text-slate-300 font-normal">c:{gate.controlQubit}</span>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Ghost gate hover preview */}
-                    {!gate && !isControlForGate && (
-                      <div className="w-8 h-8 rounded border border-dashed border-slate-700/40 flex items-center justify-center opacity-0 group-hover/cell:opacity-100 transition-opacity z-10 bg-slate-900/60">
-                        <Plus className="w-3.5 h-3.5 text-slate-500" />
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          ))}
         </div>
-      </div>
+      )}
 
-      <div className="mt-3 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-500">
+      {/* 3D Bloch Sphere & 6,000-Qubit Hyperdimensional Grid (Three.js Scene) */}
+      {composerView !== 'circuit' && (
+        <div className="mt-4 pt-4 border-t border-slate-800/80">
+          <QuantumBlochHyperdimensionalScene
+            qubitCount={qubitCount}
+            simulationResult={simulationResult}
+            engine={engine}
+            selectedCircuitQubit={selectedCircuitQubit}
+            onSelectCircuitQubit={setSelectedCircuitQubit}
+            height={composerView === '3d' ? 620 : 480}
+          />
+        </div>
+      )}
+
+      <div className="mt-3 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-500 flex-wrap gap-2">
         <span className="font-mono">
-          Total Gates: <strong className="text-emerald-400 font-semibold">{gates.length}</strong> | Click a cell to place or remove a gate.
+          Total Gates: <strong className="text-emerald-400 font-semibold">{gates.length}</strong> | Focus: <strong className="text-cyan-300">q[{selectedCircuitQubit}]</strong> | Click a cell to place or remove a gate.
         </span>
         <span className="font-mono text-[11px] text-slate-400">
-          Engine: <span className="text-cyan-400">num-complex</span> state-vector unitary evolution
+          Engine: <span className="text-cyan-400">Socxima Quantum Core</span> • Three.js 3D/4D Vector Projection
         </span>
       </div>
 

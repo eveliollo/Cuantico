@@ -363,10 +363,10 @@ export function simularPasoFisico(
   let superposicion = 2;
   let fase = (t * 2.0) % (2 * Math.PI) - Math.PI;
   let norma = 1.0; // Conservación estricta
-  let estela = estadoPrevio ? [...estadoPrevio.estela] : [];
-  let particulasExtras = estadoPrevio?.particulasExtras ? [...estadoPrevio.particulasExtras] : [];
+  let estela = Array.isArray(estadoPrevio?.estela) ? [...estadoPrevio.estela] : [];
+  let particulasExtras = Array.isArray(estadoPrevio?.particulasExtras) ? [...estadoPrevio.particulasExtras] : [];
   let spinVectors: { theta: number; phi: number; x: number; y: number; z: number }[] = [];
-  let pantallaDobleRendija = estadoPrevio?.pantallaDobleRendija
+  let pantallaDobleRendija = Array.isArray(estadoPrevio?.pantallaDobleRendija)
     ? [...estadoPrevio.pantallaDobleRendija]
     : new Array(60).fill(0);
 
