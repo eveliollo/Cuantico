@@ -1,18 +1,498 @@
 <!doctype html>
-<html lang="en">
+<html lang="es">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Socxima Quantum Core</title>
-    <meta name="description" content="High-performance quantum state simulator, real-time satellite telemetry tracking and relativistic comparison (RE/RG), Circuit Composer with Three.js 3D Bloch sphere representation, 6,000-qubit interactive hyperdimensional grid, and verifiable Ed25519 cryptographic consensus." />
+    <title>Socxima Quantum Core — Sistema Cuántico</title>
+    <meta name="description" content="High-performance quantum state simulator, real-time satellite telemetry tracking and relativistic comparison (RE/RG), Circuit Composer with Three.js 3D Bloch sphere visualization." />
     <meta property="og:title" content="Socxima Quantum Core" />
-    <meta property="og:description" content="High-performance quantum state simulator, real-time satellite telemetry tracking and relativistic comparison (RE/RG), Circuit Composer with Three.js 3D Bloch sphere representation, 6,000-qubit interactive hyperdimensional grid, and verifiable Ed25519 cryptographic consensus." />
+    <meta property="og:description" content="High-performance quantum state simulator with 3D Bloch sphere visualization and quantum circuit composer." />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: 'Courier New', monospace;
+        background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0d0015 100%);
+        color: #e0e0ff;
+        line-height: 1.6;
+        overflow-x: hidden;
+      }
+
+      /* Animación de fondo */
+      @keyframes quantum-pulse {
+        0%, 100% {
+          opacity: 0.3;
+        }
+        50% {
+          opacity: 0.6;
+        }
+      }
+
+      body::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: radial-gradient(circle at 20% 50%, rgba(0, 255, 200, 0.1) 0%, transparent 50%),
+                    radial-gradient(circle at 80% 80%, rgba(255, 0, 200, 0.1) 0%, transparent 50%);
+        pointer-events: none;
+        animation: quantum-pulse 4s ease-in-out infinite;
+        z-index: -1;
+      }
+
+      /* Header */
+      header {
+        border-bottom: 2px solid;
+        border-image: linear-gradient(90deg, #00ff88 0%, #00ffff 50%, #ff00ff 100%) 1;
+        padding: 2rem 1rem;
+        text-align: center;
+        backdrop-filter: blur(10px);
+        background: rgba(10, 14, 39, 0.8);
+        position: sticky;
+        top: 0;
+        z-index: 100;
+      }
+
+      h1 {
+        font-size: 2.5rem;
+        margin-bottom: 0.5rem;
+        text-shadow: 0 0 20px rgba(0, 255, 200, 0.8),
+                     0 0 40px rgba(255, 0, 200, 0.4);
+        letter-spacing: 2px;
+        animation: glow 2s ease-in-out infinite;
+      }
+
+      @keyframes glow {
+        0%, 100% {
+          text-shadow: 0 0 20px rgba(0, 255, 200, 0.8),
+                       0 0 40px rgba(255, 0, 200, 0.4);
+        }
+        50% {
+          text-shadow: 0 0 30px rgba(0, 255, 200, 1),
+                       0 0 60px rgba(255, 0, 200, 0.6);
+        }
+      }
+
+      .subtitle {
+        color: #00ffff;
+        font-size: 1.1rem;
+        text-shadow: 0 0 10px rgba(0, 255, 255, 0.8);
+        letter-spacing: 1px;
+      }
+
+      /* Contenedor principal */
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem 1rem;
+      }
+
+      /* Secciones */
+      section {
+        margin: 3rem 0;
+        padding: 2rem;
+        border: 1px solid;
+        border-image: linear-gradient(135deg, #00ff88 0%, #00ffff 50%, #ff00ff 100%) 1;
+        border-radius: 10px;
+        background: rgba(26, 31, 58, 0.6);
+        backdrop-filter: blur(10px);
+        box-shadow: 0 0 30px rgba(0, 255, 200, 0.2),
+                    inset 0 0 30px rgba(255, 0, 200, 0.05);
+        transition: all 0.3s ease;
+      }
+
+      section:hover {
+        box-shadow: 0 0 50px rgba(0, 255, 200, 0.4),
+                    inset 0 0 30px rgba(255, 0, 200, 0.1);
+        transform: translateY(-2px);
+      }
+
+      h2 {
+        font-size: 1.8rem;
+        margin-bottom: 1rem;
+        color: #00ffff;
+        text-shadow: 0 0 15px rgba(0, 255, 255, 0.8);
+        border-bottom: 2px solid #00ff88;
+        padding-bottom: 0.5rem;
+      }
+
+      h3 {
+        color: #00ff88;
+        margin-top: 1.5rem;
+        margin-bottom: 0.75rem;
+        font-size: 1.2rem;
+        text-shadow: 0 0 10px rgba(0, 255, 136, 0.6);
+      }
+
+      p {
+        margin-bottom: 1rem;
+        color: #c0d0ff;
+      }
+
+      /* Lista de características */
+      .features {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1.5rem;
+        margin: 2rem 0;
+      }
+
+      .feature-card {
+        padding: 1.5rem;
+        border: 2px solid #00ff88;
+        border-radius: 8px;
+        background: rgba(0, 255, 136, 0.05);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .feature-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(0, 255, 200, 0.2), transparent);
+        transition: left 0.5s ease;
+      }
+
+      .feature-card:hover::before {
+        left: 100%;
+      }
+
+      .feature-card:hover {
+        box-shadow: 0 0 20px rgba(0, 255, 136, 0.6),
+                    inset 0 0 20px rgba(0, 255, 136, 0.1);
+        transform: translateY(-5px);
+        border-color: #ff00ff;
+      }
+
+      .feature-card h3 {
+        color: #00ffff;
+        margin-top: 0;
+      }
+
+      .feature-card p {
+        font-size: 0.95rem;
+      }
+
+      /* Botones */
+      .button-group {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin: 2rem 0;
+      }
+
+      button, a.btn {
+        padding: 0.75rem 1.5rem;
+        font-size: 1rem;
+        border: 2px solid #00ff88;
+        background: linear-gradient(135deg, rgba(0, 255, 136, 0.2) 0%, rgba(0, 255, 200, 0.1) 100%);
+        color: #00ffff;
+        cursor: pointer;
+        border-radius: 6px;
+        transition: all 0.3s ease;
+        font-family: 'Courier New', monospace;
+        text-decoration: none;
+        display: inline-block;
+        box-shadow: 0 0 15px rgba(0, 255, 136, 0.3);
+        text-shadow: 0 0 5px rgba(0, 255, 200, 0.6);
+      }
+
+      button:hover, a.btn:hover {
+        background: linear-gradient(135deg, rgba(0, 255, 136, 0.4) 0%, rgba(0, 255, 200, 0.2) 100%);
+        box-shadow: 0 0 30px rgba(0, 255, 136, 0.6),
+                    0 0 15px rgba(255, 0, 200, 0.3);
+        transform: scale(1.05);
+        border-color: #ff00ff;
+      }
+
+      button:active {
+        transform: scale(0.98);
+      }
+
+      /* Información técnica */
+      .tech-specs {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin: 1.5rem 0;
+      }
+
+      .spec {
+        padding: 1rem;
+        border-left: 3px solid #ff00ff;
+        background: rgba(255, 0, 200, 0.05);
+        border-radius: 4px;
+      }
+
+      .spec strong {
+        color: #ff00ff;
+        display: block;
+        margin-bottom: 0.25rem;
+      }
+
+      .spec span {
+        color: #00ffff;
+        font-size: 0.9rem;
+      }
+
+      /* Footer */
+      footer {
+        text-align: center;
+        padding: 2rem 1rem;
+        border-top: 2px solid;
+        border-image: linear-gradient(90deg, #ff00ff 0%, #00ffff 50%, #00ff88 100%) 1;
+        margin-top: 3rem;
+        color: #00ff88;
+        font-size: 0.9rem;
+        background: rgba(10, 14, 39, 0.8);
+      }
+
+      .footer-links {
+        margin: 1rem 0;
+      }
+
+      .footer-links a {
+        color: #00ffff;
+        text-decoration: none;
+        margin: 0 1rem;
+        transition: all 0.3s ease;
+        text-shadow: 0 0 5px rgba(0, 255, 200, 0.6);
+      }
+
+      .footer-links a:hover {
+        color: #ff00ff;
+        text-shadow: 0 0 15px rgba(255, 0, 200, 0.8);
+      }
+
+      /* Código */
+      code {
+        background: rgba(0, 0, 0, 0.5);
+        padding: 2px 6px;
+        border-radius: 3px;
+        color: #00ff88;
+        font-size: 0.9rem;
+        border: 1px solid rgba(0, 255, 136, 0.3);
+      }
+
+      pre {
+        background: rgba(0, 0, 0, 0.7);
+        padding: 1rem;
+        border-radius: 6px;
+        overflow-x: auto;
+        border: 1px solid rgba(0, 255, 200, 0.3);
+        margin: 1rem 0;
+      }
+
+      pre code {
+        padding: 0;
+        border: none;
+        background: transparent;
+      }
+
+      ul {
+        margin-left: 1.5rem;
+        color: #c0d0ff;
+      }
+
+      ul li {
+        margin-bottom: 0.5rem;
+      }
+
+      /* Responsive */
+      @media (max-width: 768px) {
+        h1 {
+          font-size: 1.8rem;
+        }
+
+        h2 {
+          font-size: 1.3rem;
+        }
+
+        .features {
+          grid-template-columns: 1fr;
+        }
+
+        .button-group {
+          flex-direction: column;
+        }
+
+        button, a.btn {
+          width: 100%;
+          text-align: center;
+        }
+      }
+
+      /* Status indicator */
+      .status {
+        display: inline-block;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: #00ff88;
+        margin-right: 0.5rem;
+        animation: pulse 2s ease-in-out infinite;
+      }
+
+      @keyframes pulse {
+        0%, 100% {
+          opacity: 1;
+          box-shadow: 0 0 0 0 rgba(0, 255, 136, 0.7);
+        }
+        50% {
+          opacity: 0.7;
+          box-shadow: 0 0 0 8px rgba(0, 255, 136, 0);
+        }
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+    <header>
+      <h1>⚛️ SOCXIMA QUANTUM CORE</h1>
+      <p class="subtitle">Sistema Cuántico de Alta Rendimiento</p>
+    </header>
+
+    <div class="container">
+      <!-- Sección Hero -->
+      <section>
+        <h2>Bienvenido al Quantum Core</h2>
+        <p>Socxima Quantum Core es un simulador de estados cuánticos de alto rendimiento con visualización 3D de esferas de Bloch, seguimiento de telemetría satelital en tiempo real y análisis relativista avanzado.</p>
+        <p><span class="status"></span><strong>Estado:</strong> Sistema activo y funcional</p>
+        <div class="button-group">
+          <a href="https://github.com/eveliollo/Cuantico" class="btn" target="_blank">📂 Ver en GitHub</a>
+          <button onclick="alert('Documentación completa disponible pronto')">📖 Documentación</button>
+        </div>
+      </section>
+
+      <!-- Características principales -->
+      <section>
+        <h2>🚀 Características Principales</h2>
+        <div class="features">
+          <div class="feature-card">
+            <h3>⚛️ Simulador Cuántico</h3>
+            <p>Motor de simulación de estados cuánticos con precisión de múltiples qubits. Cálculos de operadores y transformaciones unitarias en tiempo real.</p>
+          </div>
+          <div class="feature-card">
+            <h3>🌐 Esfera de Bloch 3D</h3>
+            <p>Visualización interactiva en Three.js de estados cuánticos en la esfera de Bloch con rotaciones y proyecciones en tiempo real.</p>
+          </div>
+          <div class="feature-card">
+            <h3>🛰️ Telemetría Satelital</h3>
+            <p>Seguimiento y análisis de datos de satélites con cálculos de órbitas y posiciones en tiempo real.</p>
+          </div>
+          <div class="feature-card">
+            <h3>⚡ Análisis Relativista</h3>
+            <p>Comparación de relatividad especial (RE) y general (RG) con correcciones gravitacionales y de velocidad.</p>
+          </div>
+          <div class="feature-card">
+            <h3>🎛️ Composición de Circuitos</h3>
+            <p>Constructor visual de circuitos cuánticos con puertas lógicas, mediciones y análisis de amplitudes.</p>
+          </div>
+          <div class="feature-card">
+            <h3>📊 Análisis Estadístico</h3>
+            <p>Herramientas para análisis de distribuciones de probabilidad y comportamiento cuántico.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Especificaciones técnicas -->
+      <section>
+        <h2>🔧 Especificaciones Técnicas</h2>
+        <div class="tech-specs">
+          <div class="spec">
+            <strong>Lenguaje</strong>
+            <span>TypeScript</span>
+          </div>
+          <div class="spec">
+            <strong>Framework</strong>
+            <span>React + Vite</span>
+          </div>
+          <div class="spec">
+            <strong>Visualización 3D</strong>
+            <span>Three.js</span>
+          </div>
+          <div class="spec">
+            <strong>Cálculos</strong>
+            <span>Numeric.js / Math.js</span>
+          </div>
+          <div class="spec">
+            <strong>Estado</strong>
+            <span>Desarrollo Activo</span>
+          </div>
+          <div class="spec">
+            <strong>Licencia</strong>
+            <span>Por definir</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Cómo empezar -->
+      <section>
+        <h2>🚀 Cómo Empezar</h2>
+        <h3>Instalación</h3>
+        <pre><code>git clone https://github.com/eveliollo/Cuantico.git
+cd Cuantico
+npm install
+npm run dev</code></pre>
+        <h3>Compilación para producción</h3>
+        <pre><code>npm run build
+npm run preview</code></pre>
+        <h3>Características disponibles</h3>
+        <ul>
+          <li>Simulación de estados cuánticos de 1-3 qubits</li>
+          <li>Visualización 3D interactiva de la esfera de Bloch</li>
+          <li>Composición y análisis de circuitos cuánticos</li>
+          <li>Cálculos relativistas (RE/RG)</li>
+          <li>Datos de telemetría satelital en tiempo real</li>
+        </ul>
+      </section>
+
+      <!-- Roadmap -->
+      <section>
+        <h2>🗺️ Roadmap</h2>
+        <h3>Próximas Versiones</h3>
+        <ul>
+          <li><span class="status" style="background: #ffaa00;"></span>Soporte para n-qubits ilimitados</li>
+          <li><span class="status" style="background: #ffaa00;"></span>Motor de simulación compilado (WebAssembly)</li>
+          <li><span class="status" style="background: #ffaa00;"></span>Algoritmos cuánticos predefinidos</li>
+          <li><span class="status" style="background: #ffaa00;"></span>Exportación de datos y reportes</li>
+          <li><span class="status" style="background: #ffaa00;"></span>API REST para integración externa</li>
+          <li><span class="status" style="background: #ffaa00;"></span>Multiplayer y colaboración en tiempo real</li>
+        </ul>
+      </section>
+
+      <!-- Información del desarrollador -->
+      <section>
+        <h2>👨‍💻 Acerca del Proyecto</h2>
+        <p>Socxima Quantum Core es un proyecto de código abierto dedicado a proporcionar herramientas accesibles para la simulación cuántica y análisis relativista.</p>
+        <p>Desarrollado por <strong>Evelio Llo</strong> con pasión por la física cuántica y la programación.</p>
+        <h3>Contribuciones</h3>
+        <p>Las contribuciones son bienvenidas. Por favor, abre un issue o un pull request en el repositorio de GitHub.</p>
+        <h3>Contacto</h3>
+        <p>Para preguntas, sugerencias o reportes de bugs, por favor abre un issue en GitHub o contacta directamente.</p>
+      </section>
+    </div>
+
+    <footer>
+      <p>⚛️ Socxima Quantum Core — Sistema Cuántico de Alta Rendimiento</p>
+      <div class="footer-links">
+        <a href="https://github.com/eveliollo/Cuantico" target="_blank">GitHub</a>
+        <a href="https://github.com/eveliollo" target="_blank">Perfil</a>
+        <a href="mailto:contact@example.com">Contacto</a>
+      </div>
+      <p style="margin-top: 1rem; font-size: 0.8rem; color: #666688;">© 2024 Socxima. Todos los derechos reservados.</p>
+    </footer>
   </body>
 </html>
-
